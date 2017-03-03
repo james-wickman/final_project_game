@@ -1,113 +1,98 @@
 var game = new Phaser.Game(800, 600, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 
+var score = 0;
+var scoreText;
+var jumpTimer = 0;
+
+
+
 function preload() {
 
-    game.load.tilemap('level3', 'master/examples/assets/tilemaps/maps/cybernoid.json', null, Phaser.Tilemap.TILED_JSON);
-    game.load.image('tiles', 'master/examples/assets/tilemaps/tiles/cybernoid.png', 16, 16);
-    game.load.image('phaser', 'master/examples/assets/sprites/asteroids_ship.png');
-    game.load.image('chunk', 'master/examples/assets/sprites/chunk.png');
+	game.load.atlasJSONHash('bot', 'master/examples/assets/sprites/running_bot.png', 'master/examples/assets/sprites/running_bot.json');
+    game.load.image('sky', 'master/examples/assets/skies/sky1.png');
+    game.load.image('ground', 'master/examples/assets/sprites/platform.png');
 
 }
-
-var map;
-var layer;
-var cursors;
-var sprite;
-var emitter;
 
 function create() {
-
-
 	game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.add.sprite(0, 0, 'sky');
 
-    //  Set the world (global) gravity
-    game.physics.arcade.gravity.y = 100;
+    platforms = game.add.group();
 
-    //  A Tilemap object just holds the data needed to describe the map (i.e. the json exported from Tiled, or the CSV exported from elsewhere).
-    //  You can add your own data or manipulate the data (swap tiles around, etc) but in order to display it you need to create a TilemapLayer.
-    map = game.add.tilemap('level3');
+    var ground = platforms.create(0, game.world.height - 64, 'ground');
+    ground.scale.setTo(2, 2);
 
-    map.addTilesetImage('CybernoidMap3BG_bank.png', 'tiles');
+    var ledge = platforms.create(400, 400, 'ground');
 
-    layer = map.createLayer(0);
+    ledge = platforms.create(-150, 250, 'ground');
+    
+    s = game.add.sprite(game.world.centerX, game.world.centerY, 'bot');
+    s.anchor.setTo(0.5, 0.5);
+    s.scale.setTo(2, 2);
 
-    //  Basically this sets EVERY SINGLE tile to fully collide on all faces
-    map.setCollisionByExclusion([7, 32, 35, 36, 47]);
+    s.animations.add('run');
 
-    layer.resizeWorld();
+    // player = game.add.sprite(64, game.world.height - 150, 'bot');
+    game.physics.enable(s, Phaser.Physics.ARCADE);
+    s.body.collideWorldBounds = true;
 
-    cursors = game.input.keyboard.createCursorKeys();
+    s.body.bounce.set(0.1);
 
-    emitter = game.add.emitter(0, 0, 200);
-
-    emitter.makeParticles('chunk');
-    emitter.minRotation = 0;
-    emitter.maxRotation = 0;
-    emitter.gravity = 150;
-    emitter.bounce.setTo(0.5, 0.5);
-
-    sprite = game.add.sprite(300, 90, 'phaser');
-    sprite.anchor.set(0.5);
-
-    game.physics.enable(sprite);
-
-    //  Because both our body and our tiles are so tiny,
-    //  and the body is moving pretty fast, we need to add
-    //  some tile padding to the body. WHat this does
-    sprite.body.tilePadding.set(32, 32);
-
-    game.camera.follow(sprite);
-    game.physics.enable( sprite, Phaser.Physics.ARCADE);
-    sprite.body.bounce.y = 0.8;
-
-}
-
-function particleBurst() {
-
-    emitter.x = sprite.x;
-    emitter.y = sprite.y;
-    emitter.start(true, 2000, null, 1);
-
+    s.body.gravity.set(0, 380);
 }
 
 function update() {
+	flip = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+	flip.onDown.add(shootBullet, this);
+	function shootBullet() { 
+		s.scale.x *= -1;
 
-    game.physics.arcade.collide(sprite, layer);
-    game.physics.arcade.collide(emitter, layer);
+	}
+	// game.input.keyboard.onDown.add(processKey, this);
+	// function processKey(key) {
+	// if (key.keyCode == Phaser.RIGHT) {    
+	// 	s.scale.x *= -1;
+	// }} 
 
-    sprite.body.velocity.x = 0;
-    sprite.body.velocity.y = 40;
 
-    if (cursors.up.isDown)
+	if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
     {
-        sprite.body.velocity.y = -200;
-        particleBurst();
+    	if (s.scale.x == 2) {
+
+    	}else {
+    		s.scale.x *= -1;
+    	}
+    	s.animations.play('run', 10, true);
+        s.x -= 4;
+    } 
+    else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
+    {
+    	if (s.scale.x == 2) {
+    		s.scale.x *= -1;
+    	}else {
+    		
+    	}
+    	s.animations.play('run', 10, true);
+        s.x += 4;
     }
-    else if (cursors.down.isDown)
-    {
-        sprite.body.velocity.y = 200;
-        particleBurst();
+    else {
+    	s.animations.stop('run', 10, false);
     }
 
-    if (cursors.left.isDown)
+    if (game.input.keyboard.isDown(Phaser.Keyboard.UP) && s.body.onFloor() && game.time.now > jumpTimer)
     {
-        sprite.body.velocity.x = -200;
-        sprite.scale.x = -1;
-        particleBurst();
+        s.body.velocity.y = -450;
+        jumpTimer = game.time.now + 750;
+
     }
-    else if (cursors.right.isDown)
-    {
-        sprite.body.velocity.x = 200;
-        sprite.scale.x = 1;
-        particleBurst();
-    }
+
+
 
 }
 
 function render() {
 
-	game.debug.text('world gravity', sprite.x - 32, 64);
-
-    // game.debug.body(sprite);
+    game.debug.spriteInfo(s, 20, 32);
 
 }
