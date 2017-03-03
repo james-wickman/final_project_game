@@ -176,7 +176,7 @@ function fireBullet() {
             	console.log(bullet.body.velocity.y)
             }
             if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN)) {
-            	bullet.body.velocity.y = 200;
+            	bullet.body.velocity.y = 2l00;
             }
 
             bulletTimer = game.time.now + BULLET_SPACING;
